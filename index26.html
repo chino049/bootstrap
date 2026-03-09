@@ -252,19 +252,21 @@ function loadCommandConsole(){
         </div>
     </div>`;
 
+    // Blue button: Run arbitrary shell command
     document.getElementById("runCmd").addEventListener("click", ()=>{
         const cmd = document.getElementById("cmdInput").value;
         document.getElementById("cmdOutput").textContent = "Running...";
         fetch("/run-command", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body:JSON.stringify({ command: cmd })
+            body: JSON.stringify({ command: cmd })
         })
         .then(res => res.json())
         .then(data => document.getElementById("cmdOutput").textContent = data.output)
         .catch(err => document.getElementById("cmdOutput").textContent = "Error: " + err);
     });
 
+    // Green button: Run your Python script
     document.getElementById("runPython").addEventListener("click", ()=>{
         document.getElementById("cmdOutput").textContent = "Running Python script...";
         fetch("/run-python", {
@@ -278,60 +280,34 @@ function loadCommandConsole(){
 }
 
 /* ====================================
-   GRAPHS (Accounts 930, 476, 446, 477)
+   GRAPHS (Account 930, 476, 446)
 ==================================== */
-let chart930=null, chart476=null, chart446=null, chart477=null;
-
-function setupChart(ctx, data, color){
-    return new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.map(r => new Date(r.trans_date).toLocaleDateString()),
-            datasets: [{
-                label: 'Gross Amount',
-                data: data.map(r => r.gross),
-                backgroundColor: color + '0.6)',
-                borderColor: color + '1)',
-                borderWidth: 1,
-                fullData: data // store full rows for tooltip
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context){
-                            const row = context.dataset.fullData[context.dataIndex];
-                            // Display each field on its own line in key: value format
-                            return Object.entries(row).map(([k,v]) => `${k}: ${v}`);
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+let chart930=null, chart476=null, chart446=null;
 
 function loadGraphs(){
     showLoading();
     Promise.all([
         fetch("/transactions-930").then(res=>res.json()),
         fetch("/transactions-476").then(res=>res.json()),
-        fetch("/transactions-446").then(res=>res.json()),
-        fetch("/transactions-477").then(res=>res.json())
-    ]).then(([data930,data476,data446,data477])=>{
-        if(data930.error || data476.error || data446.error || data477.error){
-            document.getElementById("mainContent").innerHTML=`<div class="alert alert-danger">${data930.error||data476.error||data446.error||data477.error}</div>`;
+        fetch("/transactions-446").then(res=>res.json())
+    ]).then(([data930,data476,data446])=>{
+        if(data930.error || data476.error || data446.error){
+            document.getElementById("mainContent").innerHTML=`<div class="alert alert-danger">${data930.error||data476.error||data446.error}</div>`;
             return;
         }
+
+        function createLabels(data){ return data.map(row=>new Date(row.trans_date).toLocaleDateString()); }
+        function getGrossArray(data){ return data.map(r=>r.gross); }
+
+        const labels930=createLabels(data930);
+        const labels476=createLabels(data476);
+        const labels446=createLabels(data446);
 
         document.getElementById("mainContent").innerHTML=`
         <div class="graph-row">
             <div class="card shadow-sm graph-card">
                 <div class="card-body">
-                    <h4>Account 930 Payment to Owners</h4>
+                    <h4>Account 930 Transactions</h4>
                     <div class="graph-controls">
                         <button class="btn btn-sm btn-secondary" id="reset930">Reset Zoom</button>
                         <button class="btn btn-sm btn-success" id="download930">Download PNG</button>
@@ -342,7 +318,7 @@ function loadGraphs(){
 
             <div class="card shadow-sm graph-card">
                 <div class="card-body">
-                    <h4>Account 476 Labor</h4>
+                    <h4>Account 476 Transactions</h4>
                     <div class="graph-controls">
                         <button class="btn btn-sm btn-secondary" id="reset476">Reset Zoom</button>
                         <button class="btn btn-sm btn-success" id="download476">Download PNG</button>
@@ -353,7 +329,7 @@ function loadGraphs(){
 
             <div class="card shadow-sm graph-card">
                 <div class="card-body">
-                    <h4>Account 446 Water</h4>
+                    <h4>Account 446 Transactions</h4>
                     <div class="graph-controls">
                         <button class="btn btn-sm btn-secondary" id="reset446">Reset Zoom</button>
                         <button class="btn btn-sm btn-success" id="download446">Download PNG</button>
@@ -361,26 +337,28 @@ function loadGraphs(){
                     <div class="graph-container"><canvas id="chart446"></canvas></div>
                 </div>
             </div>
-
-            <div class="card shadow-sm graph-card">
-                <div class="card-body">
-                    <h4>Account 477 Wages and Salaries</h4>
-                    <div class="graph-controls">
-                        <button class="btn btn-sm btn-secondary" id="reset477">Reset Zoom</button>
-                        <button class="btn btn-sm btn-success" id="download477">Download PNG</button>
-                    </div>
-                    <div class="graph-container"><canvas id="chart477"></canvas></div>
-                </div>
-            </div>
         </div>
         `;
 
-        chart930 = setupChart(document.getElementById('chart930').getContext('2d'), data930, 'rgba(75,192,192,');
-        chart476 = setupChart(document.getElementById('chart476').getContext('2d'), data476, 'rgba(255,99,132,');
-        chart446 = setupChart(document.getElementById('chart446').getContext('2d'), data446, 'rgba(54,162,235,');
-        chart477 = setupChart(document.getElementById('chart477').getContext('2d'), data477, 'rgba(255,206,86,');
+        chart930=new Chart(document.getElementById('chart930').getContext('2d'),{
+            type:'bar',
+            data:{ labels: labels930, datasets:[{ label:'Gross Amount', data:getGrossArray(data930), backgroundColor:'rgba(75,192,192,0.6)', borderColor:'rgba(75,192,192,1)', borderWidth:1 }] },
+            options:{ responsive:true, maintainAspectRatio:false }
+        });
+        chart476=new Chart(document.getElementById('chart476').getContext('2d'),{
+            type:'bar',
+            data:{ labels: labels476, datasets:[{ label:'Gross Amount', data:getGrossArray(data476), backgroundColor:'rgba(255,99,132,0.6)', borderColor:'rgba(255,99,132,1)', borderWidth:1 }] },
+            options:{ responsive:true, maintainAspectRatio:false }
+        });
+        chart446=new Chart(document.getElementById('chart446').getContext('2d'),{
+            type:'bar',
+            data:{ labels: labels446, datasets:[{ label:'Gross Amount', data:getGrossArray(data446), backgroundColor:'rgba(54,162,235,0.6)', borderColor:'rgba(54,162,235,1)', borderWidth:1 }] },
+            options:{ responsive:true, maintainAspectRatio:false }
+        });
     });
 }
+
+
 
 /* ====================================
    EVENT LISTENERS

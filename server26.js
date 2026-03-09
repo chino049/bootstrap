@@ -150,13 +150,17 @@ async function getTransactions(acct){
   }
 }
 
-// Existing accounts
-app.get("/transactions-930", async(req,res)=>{ res.json(await getTransactions(930)); });
-app.get("/transactions-476", async(req,res)=>{ res.json(await getTransactions(476)); });
-app.get("/transactions-446", async(req,res)=>{ res.json(await getTransactions(446)); });
+app.get("/transactions-930", async(req,res)=>{
+  res.json(await getTransactions(930));
+});
 
-// NEW: Account 477
-app.get("/transactions-477", async(req,res)=>{ res.json(await getTransactions(477)); });
+app.get("/transactions-476", async(req,res)=>{
+  res.json(await getTransactions(476));
+});
+
+app.get("/transactions-446", async(req,res)=>{
+  res.json(await getTransactions(446));
+});
 
 /* ====================================
    RUN COMMAND ROUTE (for Command Console)
