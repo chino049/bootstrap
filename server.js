@@ -187,6 +187,34 @@ app.post("/run-command", (req, res) => {
 });
 
 /* ====================================
+   NEW ROUTE: RUN GROKBURY PYTHON SCRIPT
+==================================== */
+app.post("/run-grokbury", (req, res) => {
+    const scriptPath = "/home/jordonez/github/ban/GrokBuryV11.py";
+    const pythonCmd = "/usr/bin/python3.12";
+
+    const proc = spawn(pythonCmd, [scriptPath]);
+
+    let output = "";
+    let errorOutput = "";
+
+    proc.stdout.on("data", (data) => { output += data.toString(); });
+    proc.stderr.on("data", (data) => { errorOutput += data.toString(); });
+
+    proc.on("close", (code) => {
+        if (code === 0) {
+            res.json({ success: true, output });
+        } else {
+            res.json({ success: false, error: `Exit code ${code}\n${errorOutput}` });
+        }
+    });
+
+    proc.on("error", (err) => {
+        res.json({ success: false, error: err.message });
+    });
+});
+
+/* ====================================
    START SERVICES
 ==================================== */
 startMetabase();

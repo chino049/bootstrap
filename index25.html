@@ -155,7 +155,8 @@ document.getElementById(linkId).classList.add("active");
 /* ====================================
    LOAD VIEWS
 ==================================== */
-// Your existing loadDashboard, loadPostgres, loadSQLConsole, loadGraphs functions remain here
+// ... dashboard, postgres, SQL console, graphs code omitted for brevity
+// Assume your previous loadDashboard, loadPostgres, loadSQLConsole, loadGraphs functions remain here
 
 /* ====================================
    COMMAND CONSOLE
@@ -170,8 +171,8 @@ document.getElementById("pythonLink").addEventListener("click", e=>{
         <h4>Command Console</h4>
         <p>Type any OS command below and press Run:</p>
         <textarea id="cmdInput" class="form-control mb-3" rows="3" placeholder="e.g. ls -la"></textarea>
-        <button class="btn btn-primary mb-3 d-block" id="runCmd">Run</button>
-        <button class="btn btn-success mb-3 d-block" id="runGrokBury">Run GrokBury Script</button>
+        <button class="btn btn-primary mb-3" id="runCmd">Run</button>
+        <button class="btn btn-success mb-3" id="runGrokBury">Run GrokBury Script</button>
         <pre id="cmdOutput"></pre>
     </div>
     </div>
