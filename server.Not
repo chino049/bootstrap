@@ -130,74 +130,109 @@ app.post("/run-sql", async(req,res)=>{
 });
 
 /* ====================================
-   ROUTES FOR TRANSACTIONS (ALL COLUMNS)
+   NEW ROUTE: TRANSACTIONS FOR ACCOUNT 930 (ALL COLUMNS)
 ==================================== */
-async function getTransactions(acct){
+app.get("/transactions-930", async(req,res)=>{
   const client = new Client({connectionString:PG_CONNECTION});
   try{
     await client.connect();
     const result = await client.query(`
       SELECT * 
       FROM bank_transactions 
-      WHERE acct_code = $1
+      WHERE acct_code = 930  
         AND trans_date >= '2025-01-01'
       ORDER BY trans_date
-    `,[acct]);
+    `);
     await client.end();
-    return result.rows;
+    res.json(result.rows);
   }catch(err){
-    return {error: err.message};
+    res.json({error: err.message});
   }
-}
-
-app.get("/transactions-930", async(req,res)=>{
-  res.json(await getTransactions(930));
-});
-
-app.get("/transactions-476", async(req,res)=>{
-  res.json(await getTransactions(476));
-});
-
-app.get("/transactions-446", async(req,res)=>{
-  res.json(await getTransactions(446));
 });
 
 /* ====================================
-   RUN COMMAND ROUTE (for Command Console)
+   NEW ROUTE: TRANSACTIONS FOR ACCOUNT 476 (ALL COLUMNS)
+==================================== */
+app.get("/transactions-476", async(req,res)=>{
+  const client = new Client({connectionString:PG_CONNECTION});
+  try{
+    await client.connect();
+    const result = await client.query(`
+      SELECT * 
+      FROM bank_transactions 
+      WHERE acct_code = 476  
+        AND trans_date >= '2025-01-01'
+      ORDER BY trans_date
+    `);
+    await client.end();
+    res.json(result.rows);
+  }catch(err){
+    res.json({error: err.message});
+  }
+});
+
+/* ====================================
+   NEW ROUTE: TRANSACTIONS FOR ACCOUNT 446
+==================================== */
+app.get("/transactions-446", async(req,res)=>{
+  const client = new Client({connectionString:PG_CONNECTION});
+  try{
+    await client.connect();
+    const result = await client.query(`
+      SELECT * 
+      FROM bank_transactions 
+      WHERE acct_code = 446
+        AND trans_date >= '2025-01-01'
+      ORDER BY trans_date
+    `);
+    await client.end();
+    res.json(result.rows);
+  }catch(err){
+    res.json({error: err.message});
+  }
+});
+
+/* ====================================
+   NEW ROUTE: RUN ANY OS COMMAND (COMMAND CONSOLE)
 ==================================== */
 app.post("/run-command", (req, res) => {
-  const cmd = req.body.command;
-  if(!cmd) return res.json({ output: "No command provided" });
+    const cmd = req.body.command;
+    if (!cmd) return res.json({ output: "No command provided" });
 
-  const child = spawn(cmd, { shell: true });
-
-  let output = "";
-  let error = "";
-
-  child.stdout.on("data", (data) => { output += data.toString(); });
-  child.stderr.on("data", (data) => { error += data.toString(); });
-
-  child.on("close", (code) => {
-      if (error) output += "\nERROR:\n" + error;
-      res.json({ output });
-  });
+    exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+            return res.json({ output: `Error: ${error.message}\n${stderr}` });
+        }
+        res.json({ output: stdout + stderr });
+    });
 });
 
 /* ====================================
-   RUN PYTHON SCRIPT ROUTE (green button)
+   NEW ROUTE: RUN GROKBURY PYTHON SCRIPT
 ==================================== */
-app.post("/run-python", (req, res) => {
-  const command = "/usr/bin/python3.12 /home/jordonez/github/ban/GrokBuryV11.py";
+app.post("/run-grokbury", (req, res) => {
+    const scriptPath = "/home/jordonez/github/ban/GrokBuryV11.py";
+    const pythonCmd = "/usr/bin/python3.12";
 
-  exec(command, { maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
-    if (err) {
-      return res.json({ output: `Error: ${err.message}` });
-    }
-    if (stderr) {
-      return res.json({ output: `Stderr: ${stderr}` });
-    }
-    res.json({ output: stdout });
-  });
+    const proc = spawn(pythonCmd, [scriptPath]);
+
+    let output = "";
+    let errorOutput = "";
+
+    proc.stdout.on("data", (data) => { output += data.toString(); });
+    proc.stderr.on("data", (data) => { errorOutput += data.toString(); });
+
+    proc.on("close", (code) => {
+        if (code === 0) {
+            res.json({ success: true, output });
+        } else {
+            res.json({ success: false, error: `Exit code ${code}\n${errorOutput}` });
+        }
+    });
+
+    proc.on("error", (err) => {
+        res.json({ success: false, error: err.message });
+    });
 });
 
 /* ====================================
