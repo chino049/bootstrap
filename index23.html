@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Finance Analytics Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link id="theme-link" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/minty/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<style>
+body { overflow-x:hidden; }
+.sidebar { min-height:100vh; background:#343a40; }
+.sidebar a { color:white; display:block; padding:10px; text-decoration:none; border-radius:6px; }
+.sidebar a:hover { background:#495057; }
+.sidebar a.active { background:#0d6efd; }
+.loading { text-align:center; padding:40px; }
+
+body.dark-mode { background-color:#121212 !important; color:#f5f5f5 !important; }
+body.dark-mode .card { background-color:#1e1e1e; color:#f5f5f5; }
+body.dark-mode .table-dark { background-color:#2c2c2c !important; }
+body.dark-mode .sidebar { background-color:#212529; }
+body.dark-mode .sidebar a:hover { background-color:#495057; }
+body.dark-mode .navbar { background-color:#0d6efd !important; }
+
+.graph-container { height: 300px; } /* smaller graph height */
+.graph-controls { margin-bottom:10px; }
+
+/* Side-by-side layout for graphs */
+.graph-row { display: flex; flex-wrap: wrap; gap: 1rem; }
+.graph-card { flex: 1 1 45%; min-width: 300px; } /* responsive */
+</style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-primary">
+<div class="container-fluid">
+<span class="navbar-brand">Finance Dashboard</span>
+<span class="text-white">Analytics Portal</span>
+
+<button id="toggle-dark" class="btn btn-outline-light btn-sm ms-3">🌙</button>
+
+<select id="themeSwitcher" class="form-select form-select-sm ms-3" style="width:auto;">
+<option value="minty">Minty</option>
+<option value="lux">Lux</option>
+<option value="cerulean">Cerulean</option>
+<option value="cosmo">Cosmo</option>
+<option value="cyborg">Cyborg</option>
+<option value="darkly">Darkly</option>
+<option value="flatly">Flatly</option>
+<option value="journal">Journal</option>
+<option value="litera">Litera</option>
+<option value="lumen">Lumen</option>
+<option value="materia">Materia</option>
+<option value="pulse">Pulse</option>
+<option value="quartz">Quartz</option>
+<option value="sandstone">Sandstone</option>
+<option value="simplex">Simplex</option>
+<option value="sketchy">Sketchy</option>
+<option value="slate">Slate</option>
+<option value="solar">Solar</option>
+<option value="spacelab">Spacelab</option>
+<option value="superhero">Superhero</option>
+<option value="united">United</option>
+<option value="vapor">Vapor</option>
+<option value="zephyr">Zephyr</option>
+</select>
+</div>
+</nav>
+
+<div class="container-fluid">
+<div class="row">
+
+<div class="col-3 col-md-2 sidebar p-3">
+<h5 class="text-white mb-4">Menu</h5>
+
+<a href="#" id="homeLink" class="active">Home</a>
+<a href="#" id="dashboardLink">Dashboard</a>
+<a href="#" id="reportsLink">PostgreSQL</a>
+<a href="#" id="sqlLink">SQL Console</a>
+<a href="#" id="graphsLink">Graphs</a>
+<a href="#" id="pythonLink">Ingest Bank Transaction</a>
+
+<a href="https://www.xero.com/us/login/" target="_blank">Xero</a>
+
+</div>
+
+<div class="col-9 col-md-10 p-4">
+
+<div id="mainContent">
+<div class="card shadow-sm">
+<div class="card-body">
+<h2>Welcome</h2>
+<p>Select a tool from the sidebar.</p>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<footer class="text-center p-3 border-top">Dashboard System</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* ====================================
+   THEME & DARK MODE
+==================================== */
+const toggle = document.getElementById('toggle-dark');
+if(localStorage.getItem('themeMode')==='dark'){ document.body.classList.add('dark-mode'); }
+
+toggle.addEventListener('click', ()=>{
+document.body.classList.toggle('dark-mode');
+localStorage.setItem('themeMode',document.body.classList.contains('dark-mode')?'dark':'light');
+});
+
+const themeLink=document.getElementById('theme-link');
+const themeSelect=document.getElementById('themeSwitcher');
+
+if(localStorage.getItem('themeBootswatch')){
+const saved=localStorage.getItem('themeBootswatch');
+themeLink.href=`https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/${saved}/bootstrap.min.css`;
+themeSelect.value=saved;
+}
+
+themeSelect.addEventListener('change',()=>{
+const theme=themeSelect.value;
+themeLink.href=`https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/${theme}/bootstrap.min.css`;
+localStorage.setItem('themeBootswatch',theme);
+});
+
+/* ====================================
+   UTILITY FUNCTIONS
+==================================== */
+function showLoading(){
+document.getElementById("mainContent").innerHTML=`
+<div class="loading">
+<div class="spinner-border text-primary"></div>
+<p class="mt-3">Loading...</p>
+</div>`;
+}
+
+function setActive(linkId){
+document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
+document.getElementById(linkId).classList.add("active");
+}
+
+/* ====================================
+   LOAD VIEWS
+==================================== */
+function loadDashboard(){
+showLoading();
+fetch("/metabase-url").then(res=>res.json()).then(data=>{
+document.getElementById("mainContent").innerHTML=`
+<div class="card shadow-sm">
+<div class="card-body">
+<h4>Metabase Dashboard</h4>
+<iframe src="${data.url}" width="100%" height="800"></iframe>
+</div>
+</div>`;
+});
+}
+
+function loadPostgres(){
+showLoading();
+fetch("/pg-test").then(res=>res.json()).then(data=>{
+if(data.status==="connected"){
+
+const colOrder=data.colOrder||[];
+
+let headers="",rows="";
+
+colOrder.forEach(c=>headers+=`<th>${c}</th>`);
+
+data.sample.forEach(row=>{
+rows+="<tr>";
+colOrder.forEach(c=>rows+=`<td>${row[c]}</td>`);
+rows+="</tr>";
+});
+
+document.getElementById("mainContent").innerHTML=`
+<div class="card shadow-sm">
+<div class="card-body">
+<h4>PostgreSQL: bank_transactions</h4>
+
+<div class="alert alert-success">Database Connected: ${data.database}</div>
+
+<div class="table-responsive">
+<table id="pgTable" class="table table-striped table-hover">
+<thead class="table-dark"><tr>${headers}</tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</div>
+
+</div>
+</div>`;
+
+setTimeout(()=>$('#pgTable').DataTable(),100);
+
+}
+});
+}
+
+function loadSQLConsole(){
+
+document.getElementById("mainContent").innerHTML=`
+
+<div class="card shadow-sm">
+<div class="card-body">
+
+<h4>SQL Console</h4>
+
+<textarea id="sqlQuery" class="form-control mb-3" rows="6">
+SELECT * FROM bank_transactions
+</textarea>
+
+<button class="btn btn-primary mb-3" onclick="runSQL()">Run Query</button>
+
+<div id="sqlResults"></div>
+
+</div>
+</div>
+
+`;
+
+/* automatically execute query */
+setTimeout(()=>{
+runSQL();
+},200);
+
+}
+
+function runSQL(){
+
+const query=document.getElementById("sqlQuery").value;
+
+fetch("/run-sql",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({query})
+})
+.then(res=>res.json())
+.then(data=>{
+
+if(data.error){
+document.getElementById("sqlResults").innerHTML=`<div class="alert alert-danger">${data.error}</div>`;
+return;
+}
+
+let headers="",rows="";
+
+if(data.rows.length>0){
+
+Object.keys(data.rows[0]).forEach(col=>headers+=`<th>${col}</th>`);
+
+data.rows.forEach(r=>{
+rows+="<tr>";
+Object.values(r).forEach(v=>rows+=`<td>${v}</td>`);
+rows+="</tr>";
+});
+
+}
+
+document.getElementById("sqlResults").innerHTML=`
+<table id="sqlTable" class="table table-striped table-hover">
+<thead class="table-dark"><tr>${headers}</tr></thead>
+<tbody>${rows}</tbody>
+</table>
+`;
+
+setTimeout(()=>$('#sqlTable').DataTable(),100);
+
+});
+
+}
+
+/* ====================================
+   LOAD GRAPHS (Bar Charts with full tooltips)
+==================================== */
+let chart930 = null;
+let chart476 = null;
+
+function loadGraphs(){
+    showLoading();
+
+    Promise.all([
+        fetch("/transactions-930").then(res=>res.json()),
+        fetch("/transactions-476").then(res=>res.json())
+    ]).then(([data930, data476])=>{
+
+        if(data930.error){
+            document.getElementById("mainContent").innerHTML=`<div class="alert alert-danger">${data930.error}</div>`;
+            return;
+        }
+        if(data476.error){
+            document.getElementById("mainContent").innerHTML=`<div class="alert alert-danger">${data476.error}</div>`;
+            return;
+        }
+
+        const filtered930 = data930.filter(row => new Date(row.trans_date) >= new Date("2025-01-01"));
+        const labels930 = filtered930.map(row => new Date(row.trans_date).toLocaleDateString());
+        const filtered476 = data476.filter(row => new Date(row.trans_date) >= new Date("2025-01-01"));
+        const labels476 = filtered476.map(row => new Date(row.trans_date).toLocaleDateString());
+
+        document.getElementById("mainContent").innerHTML=`
+        <div class="graph-row">
+
+            <div class="card shadow-sm graph-card">
+                <div class="card-body">
+                    <h4>Account 930 Transactions</h4>
+                    <div class="graph-controls">
+                        <button class="btn btn-sm btn-secondary" id="reset930">Reset Zoom</button>
+                        <button class="btn btn-sm btn-success" id="download930">Download PNG</button>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="chart930"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm graph-card">
+                <div class="card-body">
+                    <h4>Account 476 Transactions</h4>
+                    <div class="graph-controls">
+                        <button class="btn btn-sm btn-secondary" id="reset476">Reset Zoom</button>
+                        <button class="btn btn-sm btn-success" id="download476">Download PNG</button>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="chart476"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        `;
+
+        function getGrossArray(data){ return data.map(r=>r.gross); }
+
+        // Chart 930
+        const ctx930 = document.getElementById('chart930').getContext('2d');
+        chart930 = new Chart(ctx930,{
+            type:'bar',
+            data:{ labels: labels930, datasets:[{ label:'Gross Amount', data: getGrossArray(filtered930), backgroundColor:'rgba(75,192,192,0.6)', borderColor:'rgba(75,192,192,1)', borderWidth:1 }] },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{
+                    tooltip:{
+                        callbacks:{
+                            label: function(context){
+                                const index = context.dataIndex;
+                                const row = filtered930[index];
+                                let tooltip = [];
+                                Object.entries(row).forEach(([k,v])=>{
+                                    if(k==='gross') v='$'+parseFloat(v).toLocaleString();
+                                    tooltip.push(`${k}: ${v}`);
+                                });
+                                return tooltip;
+                            }
+                        }
+                    },
+                    legend:{display:true}
+                },
+                scales:{ x:{title:{display:true,text:'Transaction Date'}}, y:{title:{display:true,text:'Gross Amount'}, beginAtZero:true} }
+            }
+        });
+        document.getElementById('reset930').addEventListener('click', ()=>{ if(chart930) chart930.resetZoom(); });
+        document.getElementById('download930').addEventListener('click', ()=>{ if(chart930){ const link=document.createElement('a'); link.href=chart930.toBase64Image(); link.download='account930_chart.png'; link.click(); } });
+
+        // Chart 476
+        const ctx476 = document.getElementById('chart476').getContext('2d');
+        chart476 = new Chart(ctx476,{
+            type:'bar',
+            data:{ labels: labels476, datasets:[{ label:'Gross Amount', data: getGrossArray(filtered476), backgroundColor:'rgba(255,99,132,0.6)', borderColor:'rgba(255,99,132,1)', borderWidth:1 }] },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{
+                    tooltip:{
+                        callbacks:{
+                            label: function(context){
+                                const index = context.dataIndex;
+                                const row = filtered476[index];
+                                let tooltip = [];
+                                Object.entries(row).forEach(([k,v])=>{
+                                    if(k==='gross') v='$'+parseFloat(v).toLocaleString();
+                                    tooltip.push(`${k}: ${v}`);
+                                });
+                                return tooltip;
+                            }
+                        }
+                    },
+                    legend:{display:true}
+                },
+                scales:{ x:{title:{display:true,text:'Transaction Date'}}, y:{title:{display:true,text:'Gross Amount'}, beginAtZero:true} }
+            }
+        });
+        document.getElementById('reset476').addEventListener('click', ()=>{ if(chart476) chart476.resetZoom(); });
+        document.getElementById('download476').addEventListener('click', ()=>{ if(chart476){ const link=document.createElement('a'); link.href=chart476.toBase64Image(); link.download='account476_chart.png'; link.click(); } });
+
+    });
+}
+
+/* ====================================
+   EVENT LISTENERS
+==================================== */
+document.getElementById("dashboardLink").addEventListener("click",e=>{
+e.preventDefault();
+setActive("dashboardLink");
+loadDashboard();
+});
+
+document.getElementById("reportsLink").addEventListener("click",e=>{
+e.preventDefault();
+setActive("reportsLink");
+loadPostgres();
+});
+
+document.getElementById("sqlLink").addEventListener("click",e=>{
+e.preventDefault();
+setActive("sqlLink");
+loadSQLConsole();
+});
+
+document.getElementById("graphsLink").addEventListener("click",e=>{
+    e.preventDefault();
+    setActive("graphsLink");
+    loadGraphs();
+});
+
+document.getElementById("homeLink").addEventListener("click",e=>{
+e.preventDefault();
+setActive("homeLink");
+location.reload();
+});
+
+document.getElementById("pythonLink").addEventListener("click",e=>{
+e.preventDefault();
+setActive("pythonLink");
+location.reload();
+});
+</script>
+
+</body>
+</html>

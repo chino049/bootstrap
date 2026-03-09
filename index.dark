@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Finance Analytics Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Bootswatch Theme -->
+<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/lux/bootstrap.min.css" rel="stylesheet">
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<style>
+body { overflow-x:hidden; }
+.sidebar { min-height:100vh; background:#343a40; }
+.sidebar a { color:white; display:block; padding:10px; text-decoration:none; border-radius:6px; }
+.sidebar a:hover { background:#495057; }
+.sidebar a.active { background:#0d6efd; }
+.loading { text-align:center; padding:40px; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+
+<nav class="navbar navbar-dark bg-primary">
+  <div class="container-fluid">
+    <span class="navbar-brand">Finance Dashboard</span>
+    <span class="text-white">Analytics Portal</span>
+
+    <!-- Dark Mode Toggle Button -->
+    <button id="toggle-dark" class="btn btn-outline-light btn-sm ms-3">🌙</button>
+  </div>
+</nav>
+
+<div class="container-fluid">
+<div class="row">
+
+<!-- SIDEBAR -->
+<div class="col-3 col-md-2 sidebar p-3">
+<h5 class="text-white mb-4">Menu</h5>
+<a href="#" id="homeLink" class="active">Home</a>
+<a href="#" id="dashboardLink">Dashboard</a>
+<a href="#" id="reportsLink">PostgreSQL</a>
+<a href="https://www.xero.com/us/login/" target="_blank">Xero</a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="col-9 col-md-10 p-4">
+<div id="mainContent">
+<div class="card shadow-sm">
+<div class="card-body">
+<h2>Welcome</h2>
+<p>Select a tool from the sidebar.</p>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<footer class="text-center p-3 border-top">Dashboard System</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Loading spinner
+function showLoading() {
+  document.getElementById("mainContent").innerHTML = `
+    <div class="loading">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-3">Loading...</p>
+    </div>
+  `;
+}
+
+// Sidebar active menu
+function setActive(linkId){
+  document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
+  document.getElementById(linkId).classList.add("active");
+}
+
+// METABASE DASHBOARD
+function loadDashboard(){
+  showLoading();
+  fetch("/metabase-url")
+    .then(res=>res.json())
+    .then(data=>{
+      document.getElementById("mainContent").innerHTML = `
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4>Metabase Dashboard</h4>
+          <iframe src="${data.url}" width="100%" height="800" frameborder="0"></iframe>
+        </div>
+      </div>
+      `;
+    });
+}
+
+// POSTGRES DATA + CHARTS
+function loadPostgres(){
+  showLoading();
+  fetch("/pg-test")
+    .then(res=>res.json())
+    .then(data=>{
+      if(data.status==="connected"){
+        let headers = "";
+        if(data.sample.length>0){
+          for(const col in data.sample[0]){
+            headers += `<th>${col}</th>`;
+          }
+        }
+
+        let rows = "";
+        let labels = [];
+        let amounts = [];
+        let balance = [];
+        let runningBalance = 0;
+
+        data.sample.forEach(row=>{
+          rows += "<tr>";
+          for(const col in row){
+            rows += `<td>${row[col]}</td>`;
+          }
+          rows += "</tr>";
+
+          const amt = Number(row.amount ?? 0);
+          labels.push(row.description ?? "Txn");
+          amounts.push(amt);
+          runningBalance += amt;
+          balance.push(runningBalance);
+        });
+
+        document.getElementById("mainContent").innerHTML = `
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5>Transaction Amounts</h5>
+                <canvas id="amountChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5>Running Balance</h5>
+                <canvas id="balanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h4>PostgreSQL: bank_transactions</h4>
+            <div class="alert alert-success">Database Connected: ${data.database}</div>
+            <p><strong>Rows returned:</strong> ${data.rowsReturned}</p>
+            <div class="table-responsive">
+              <table id="pgTable" class="table table-striped table-hover">
+                <thead class="table-dark"><tr>${headers}</tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        `;
+
+        setTimeout(()=>$('#pgTable').DataTable({pageLength:10,lengthMenu:[10,25,50,100]}),100);
+        setTimeout(()=>new Chart(document.getElementById("amountChart"),{type:"bar",data:{labels:labels,datasets:[{label:"Transaction Amount",data:amounts,backgroundColor:"rgba(54,162,235,0.6)"}]}}),200);
+        setTimeout(()=>new Chart(document.getElementById("balanceChart"),{type:"line",data:{labels:labels,datasets:[{label:"Running Balance",data:balance,borderColor:"green",fill:false,tension:0.2}]}}),300);
+
+      } else {
+        document.getElementById("mainContent").innerHTML = `<div class="alert alert-danger">Database Connection Failed</div><p>${data.error}</p>`;
+      }
+    });
+}
+
+// Menu events
+document.getElementById("dashboardLink").addEventListener("click", e=>{ e.preventDefault(); setActive("dashboardLink"); loadDashboard(); });
+document.getElementById("homeLink").addEventListener("click", e=>{ e.preventDefault(); setActive("homeLink"); document.getElementById("mainContent").innerHTML = `<div class="card shadow-sm"><div class="card-body"><h2>Home</h2><p>Welcome to your analytics dashboard.</p></div></div>`; });
+document.getElementById("reportsLink").addEventListener("click", e=>{ e.preventDefault(); setActive("reportsLink"); loadPostgres(); });
+</script>
+
+</body>
+</html>

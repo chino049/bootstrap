@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sidebar Menu</title>
+
+<link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+  overflow-x: hidden;
+}
+
+.sidebar{
+  height: 100vh;
+  background-color: #343a40;
+}
+
+.sidebar a{
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 10px;
+}
+
+.sidebar a:hover{
+  background-color: #495057;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+  <div class="row">
+
+    <!-- Sidebar -->
+    <div class="col-3 col-md-2 sidebar p-3">
+      <h4 class="text-white">Menu</h4>
+      <a href="#">Home</a>
+      <a href="#">Dashboard</a>
+      <a href="#">Reports</a>
+      <a href="#">Settings</a>
+      <a href="#">Logout</a>
+    </div>
+
+    <!-- Main content -->
+    <div class="col-9 col-md-10 p-4">
+      <h1>Main Content Area</h1>
+      <p>This is where your page content goes.</p>
+    </div>
+
+  </div>
+</div>
+
+<script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
