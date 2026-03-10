@@ -140,7 +140,7 @@ async function getTransactions(acct){
       SELECT * 
       FROM bank_transactions 
       WHERE acct_code = $1
-        AND trans_date >= '2025-01-01'
+        AND trans_date >= '2026-01-01'
       ORDER BY trans_date
     `,[acct]);
     await client.end();
