@@ -252,7 +252,7 @@ function loadCommandConsole(){
 /* =====================
    GRAPHS WITH DRILL-DOWN
 ===================== */
-let chart930, chart476, chart446, chart477, chart473, chart445;
+let chart930, chart476, chart446, chart477;
 
 function showTransactions(rows){
   if(rows.length===0) return;
@@ -326,31 +326,22 @@ function loadGraphs(){
   showLoading();
   Promise.all([
     fetch("/transactions-930").then(r=>r.json()),
-    fetch("/transactions-476").then(r=>r.json()),    
-    fetch("/transactions-477").then(r=>r.json()),
-    fetch("/transactions-473").then(r=>r.json()),
+    fetch("/transactions-476").then(r=>r.json()),
     fetch("/transactions-446").then(r=>r.json()),
-    fetch("/transactions-445").then(r=>r.json())
-  ]).then(([d930,d476,d477,d473,d446,d445])=>{
+    fetch("/transactions-477").then(r=>r.json())
+  ]).then(([d930,d476,d446,d477])=>{
     document.getElementById("mainContent").innerHTML=
     `<div class="graph-row">
       ${graphCard("930","Payment to Owners")}
       ${graphCard("476","Labor")}
-      ${graphCard("477","Wages and Salaries")}
-      ${graphCard("473","Materials, Repairs, and Maintenance")} 
       ${graphCard("446","Water")}
-      ${graphCard("445","Electricity")}
+      ${graphCard("477","Wages and Salaries")}
     </div>
     <div id="transactionTable"></div>`;
     chart930=createChart(document.getElementById("chart930"),d930,"rgba(75,192,192,0.6)","930");
     chart476=createChart(document.getElementById("chart476"),d476,"rgba(255,99,132,0.6)","476");
-    chart477=createChart(document.getElementById("chart477"),d477,"rgba(255,206,86,0.6)","477") 
-    chart473=createChart(document.getElementById("chart473"),d473,"rgba(25,26,86,0.6)","473");   
     chart446=createChart(document.getElementById("chart446"),d446,"rgba(54,162,235,0.6)","446");
-    chart445=createChart(document.getElementById("chart445"),d445,"rgba(154,12,25,0.6)","445");
-;
-
-
+    chart477=createChart(document.getElementById("chart477"),d477,"rgba(255,206,86,0.6)","477");
   });
 }
 
