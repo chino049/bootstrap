@@ -231,19 +231,20 @@ function loadCommandConsole(){
   <div class="card shadow-sm">
     <div class="card-body">
       <h4>Command Console</h4>
-      <textarea id="cmdInput" class="form-control mb-3" rows="3" 
-          placeholder="e.g. cp /hone/jordonez/Downloads/Patinio_-_Bank_transactions_by_date_JOP_All.xlsx /home/jordonez/github/Pandas/Patinio_-_Bank_transactions_by_date_JOP_All_$(date +%m%d%y).xlsx"></textarea>
+      <textarea id="cmdInput" class="form-control mb-3" rows="3" placeholder="e.g. ls -la"></textarea>
       <button class="btn btn-primary mb-3 d-block" id="runCmd">Run Command</button>
       <button class="btn btn-success mb-3 d-block" id="runPython">Run Python</button>
-     
-        <div class="d-flex align-items-start mb-3">
-         <button class="btn btn-primary me-3 text-nowrap" style="min-width:220px" id="runIngestCmd">Run Ingest Command</button>
-         <textarea id="cmdIngestInput" class="form-control flex-grow-1" rows="3">
-            cp /home/jordonez/Downloads/Patinio_-_Bank_transactions_by_date_JOP_All.xlsx /home/jordonez/github/pandas/Patinio_-_Bank_transactions_by_date_JOP_All_$(date +%m%d%y).xlsx; 
-            /bin/python3 /home/jordonez/github/pandas/ingest_V8.py /home/jordonez/github/pandas/Patinio_-_Bank_transactions_by_date_JOP_All_$(date +%m%d%y).xlsx </textarea>
-       </div> 
-    </div>
-    <pre id="cmdOutput"></pre>
+      <!-- <div class="d-flex align-items-start mb-3">
+
+      //   <button class="btn btn-primary me-3 text-nowrap"
+      //     style="min-width:220px"
+      //     id="runIngestCmd">
+      //     Run Ingest Command
+      //   </button>
+
+      //   <textarea id="cmdIngestInput" class="form-control flex-grow-1" rows="3">ls /home/jordonez</textarea>
+
+      // </div> -->
   </div>`;
   document.getElementById("runCmd").onclick=()=>{
     const cmd=document.getElementById("cmdInput").value;
@@ -257,25 +258,24 @@ function loadCommandConsole(){
     .then(res=>res.json()).then(data=>document.getElementById("cmdOutput").textContent=data.output);
   };
 
-    document.getElementById("runIngestCmd").addEventListener("click", async () => {
-    const cmd = document.getElementById("cmdIngestInput").value;
-    const outputEl = document.getElementById("cmdOutput");
+  // document.getElementById("runIngestCmd").addEventListener("click", async () => {
+  //   const cmd = document.getElementById("cmdIngestInput").value;
+  //   const outputEl = document.getElementById("cmdOutput");
 
-    // Send the command to your backend
-    try {
-      const response = await fetch("/run-command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: cmd })
-      });
+  //   // Send the command to your backend
+  //   try {
+  //     const response = await fetch("/run-command", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ command: cmd })
+  //     });
 
-      const data = await response.json();
-      outputEl.textContent = data.output;  // Show output in <pre>
-    } catch (err) {
-      outputEl.textContent = "Error: " + err;
-    }
-  });
-
+  //     const data = await response.json();
+  //     outputEl.textContent = data.output;  // Show output in <pre>
+  //   } catch (err) {
+  //     outputEl.textContent = "Error: " + err;
+  //   }
+  // });
 
 }
 
